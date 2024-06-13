@@ -1,0 +1,10 @@
+dask[dataframe]
+dask-expr
+xarray
+plotly
+opencv-python-headless
+numpy
+pymongo
+fastapi
+uvicorn
+pytest
