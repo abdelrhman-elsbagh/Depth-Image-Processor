@@ -70,10 +70,25 @@ curl -X POST "http://13.60.8.235:8000/get-image-frame/" -H "Content-Type: applic
 ```bash
 curl -X POST "http://13.60.8.235:8000/get-colored-image-frame/" -H "Content-Type: application/json" -d '{
   "depth_min": 9000.0,
-  "depth_max": 9500.0
+  "depth_max": 9500.0,
+  "color_map": "winter"
 }'
-
 ```
+
+### Here are some samples of colors you could map
+- autumn
+- bone
+- jet
+- winter
+- rainbow
+- ocean
+- summer
+- spring
+- cool
+- hsv
+- pink
+- hot
+- parula
 
 
 
