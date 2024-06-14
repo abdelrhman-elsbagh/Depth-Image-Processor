@@ -6,9 +6,10 @@ import numpy as np
 import pymongo
 import gridfs
 from io import BytesIO
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
+from fastapi.responses import FileResponse
 import uvicorn
 import logging
 
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 # Define file path using current directory
 current_dir = os.path.dirname(__file__)
 file_path = os.path.join(current_dir, 'img.csv')
+
+# Create a directory to serve images
+images_dir = os.path.join(current_dir, 'images')
+os.makedirs(images_dir, exist_ok=True)
 
 
 class ImageProcessor:
@@ -65,7 +70,7 @@ class ImageProcessor:
             logger.info("Image resized successfully.")
 
             # Save the resized image for verification
-            cv2.imwrite(os.path.join(current_dir, 'resized_image.jpg'), self.resized_image)
+            cv2.imwrite(os.path.join(images_dir, 'resized_image.jpg'), self.resized_image)
             logger.info("Resized image saved successfully.")
 
             # Store the resized image in MongoDB
@@ -106,17 +111,39 @@ class ImageProcessor:
             raise ValueError("No data found in the specified depth range.")
 
         frame = self.resized_image[mask, :]
-        frame_image_path = os.path.join(current_dir, 'frame_image.jpg')
+        frame_image_path = os.path.join(images_dir, 'frame_image.jpg')
         cv2.imwrite(frame_image_path, frame)
         return frame_image_path
 
-    def get_colored_image_frame(self, depth_min, depth_max):
+    def get_colored_image_frame(self, depth_min, depth_max, color_map):
         frame_path = self.get_image_frame(depth_min, depth_max)
         frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
-        colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-        colored_image_path = os.path.join(current_dir, 'colored_frame.jpg')
+
+        # Apply a custom color map
+        color_map_code = self.get_color_map_code(color_map)
+        colored_frame = cv2.applyColorMap(frame, color_map_code)
+        colored_image_path = os.path.join(images_dir, 'colored_frame.jpg')
         cv2.imwrite(colored_image_path, colored_frame)
         return colored_image_path
+
+    @staticmethod
+    def get_color_map_code(color_map):
+        color_maps = {
+            'autumn': cv2.COLORMAP_AUTUMN,
+            'bone': cv2.COLORMAP_BONE,
+            'jet': cv2.COLORMAP_JET,
+            'winter': cv2.COLORMAP_WINTER,
+            'rainbow': cv2.COLORMAP_RAINBOW,
+            'ocean': cv2.COLORMAP_OCEAN,
+            'summer': cv2.COLORMAP_SUMMER,
+            'spring': cv2.COLORMAP_SPRING,
+            'cool': cv2.COLORMAP_COOL,
+            'hsv': cv2.COLORMAP_HSV,
+            'pink': cv2.COLORMAP_PINK,
+            'hot': cv2.COLORMAP_HOT,
+            'parula': cv2.COLORMAP_PARULA
+        }
+        return color_maps.get(color_map, cv2.COLORMAP_JET)
 
 
 image_processor = ImageProcessor(file_path)
@@ -138,11 +165,17 @@ class DepthRange(BaseModel):
     depth_max: float
 
 
+class ColoredDepthRange(DepthRange):
+    color_map: str
+
+
 @app.post("/get-image-frame/")
-async def get_image_frame(depth_range: DepthRange):
+async def get_image_frame(request: Request, depth_range: DepthRange):
     try:
         frame_image_path = image_processor.get_image_frame(depth_range.depth_min, depth_range.depth_max)
-        return {"frame_image_path": frame_image_path}
+        base_url = request.base_url
+        frame_image_url = f"{base_url}images/frame_image.jpg"
+        return {"frame_image_url": frame_image_url}
     except ValueError as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=404, detail=str(e))
@@ -152,16 +185,29 @@ async def get_image_frame(depth_range: DepthRange):
 
 
 @app.post("/get-colored-image-frame/")
-async def get_colored_image_frame(depth_range: DepthRange):
+async def get_colored_image_frame(request: Request, depth_range: ColoredDepthRange):
     try:
-        colored_image_path = image_processor.get_colored_image_frame(depth_range.depth_min, depth_range.depth_max)
-        return {"colored_image_path": colored_image_path}
+        colored_image_path = image_processor.get_colored_image_frame(
+            depth_range.depth_min, depth_range.depth_max, depth_range.color_map
+        )
+        base_url = request.base_url
+        colored_image_url = f"{base_url}images/colored_frame.jpg"
+        return {"colored_image_url": colored_image_url}
     except ValueError as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/images/{image_name}")
+async def get_image(image_name: str):
+    image_path = os.path.join(images_dir, image_name)
+    if os.path.exists(image_path):
+        return FileResponse(image_path)
+    else:
+        raise HTTPException(status_code=404, detail="Image not found")
 
 
 if __name__ == "__main__":

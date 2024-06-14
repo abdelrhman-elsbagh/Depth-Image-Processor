@@ -34,6 +34,7 @@ docker-compose run test
 ## Requirements For Setup Locally
 
 - Python 3.10.12
+- MongoDB
 
 ## Setup Via Docker
 

@@ -1,0 +1,74 @@
+{
+	"info": {
+		"_postman_id": "2b6b372e-7475-4db6-a762-f80d712667d8",
+		"name": "IMG-PROCESSING-COLLECTION",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18451823"
+	},
+	"item": [
+		{
+			"name": "get-colored-image-frame",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"depth_min\": 9000.1,\n    \"depth_max\": 9546,\n    \"color_map\": \"winter\"\n}"
+				},
+				"url": {
+					"raw": "http://13.60.8.235:8000/get-colored-image-frame/",
+					"protocol": "http",
+					"host": [
+						"13",
+						"60",
+						"8",
+						"235"
+					],
+					"port": "8000",
+					"path": [
+						"get-colored-image-frame",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-image-frame",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"depth_min\": 9000.1,\n    \"depth_max\": 9546\n}"
+				},
+				"url": {
+					"raw": "http://13.60.8.235:8000/get-image-frame/",
+					"protocol": "http",
+					"host": [
+						"13",
+						"60",
+						"8",
+						"235"
+					],
+					"port": "8000",
+					"path": [
+						"get-image-frame",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
